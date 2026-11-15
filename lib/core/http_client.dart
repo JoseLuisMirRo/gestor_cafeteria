@@ -61,6 +61,7 @@ class ApiClient {
     throw switch (code) {
       404 => NotFoundFailure(mensaje ?? 'Recurso no encontrado'),
       409 => ConflictFailure(mensaje ?? 'Conflicto con el estado actual'),
+      422 => ValidationFailure(_validationFields(json)),
       >= 500 && <= 599 => ServerFailure(code),
       _ => UnexpectedFailure(code, mensaje ?? 'Error inesperado ($code)'),
     };
@@ -73,6 +74,20 @@ class ApiClient {
       return json['detail'] as String;
     }
     return null;
+  }
+
+  //422: por cada elemento de detail, la clave es loc[1] y el valor es msg.
+  Map<String, String> _validationFields(dynamic json) {
+    final fields = <String, String>{};
+    if (json is Map && json['detail'] is List) {
+      for (final item in json['detail'] as List) {
+        if (item is Map && item['loc'] is List && item['msg'] is String) {
+          final loc = item['loc'] as List;
+          if (loc.length > 1) fields[loc[1].toString()] = item['msg'] as String;
+        }
+      }
+    }
+    return fields;
   }
 
   dynamic _tryDecode(http.Response response) {

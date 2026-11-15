@@ -122,4 +122,16 @@ void main() {
 
     await expectLater(api.get('/orders'), throwsA(isA<NetworkFailure>()));
   });
+
+  test('300 no es exito y lanza UnexpectedFailure', () async {
+    final mock = MockClient((request) async => http.Response('', 300));
+    final api = ApiClient(client: mock, baseUrl: 'http://prueba');
+
+    await expectLater(
+      api.get('/orders'),
+      throwsA(
+        isA<UnexpectedFailure>().having((f) => f.statusCode, 'statusCode', 300),
+      ),
+    );
+  });
 }
